@@ -1,4 +1,6 @@
 import math
+import numpy as np
+import matplotlib.pyplot as plt
 
 # CONSTANTS
 AD = 1.2
@@ -8,9 +10,9 @@ BALL_DIA = 0.043
 BALL_RAD = BALL_DIA / 2
 BALL_MASS = 0.045
 BALL_AREA = math.pi * (BALL_RAD**2)
-BALL_INITIAL_ANG_VEL = 840
+BALL_INITIAL_ANG_VEL = 418
 BALL_SPIN_DECAY_RATE = 0.04
-WEIGHT_FORCE = (0.45,270)
+WEIGHT_FORCE = (0.45, 270)
 BALL_INITIAL_NET = (0.47779996900547594, -164.51202290763308)
 REYNOLDS_TO_CD = [
     (93055.55555555556, 0.2580508474576271),
@@ -57,15 +59,27 @@ REYNOLDS_TO_CD = [
 time = 0
 
 
-def drag_force(v, Cd) -> int:
-    return 0.5 * AD * (v**2) * Cd * BALL_AREA
+def drag_force(v, Cd, velocity) -> int:
+    return (0.5 * AD * (v[0]**2) * Cd * BALL_AREA, velocity[1]+180)
+
+def lift_force(v, Cl) -> int:
+    return (0.5 * AD * (v[0]**2) * Cl * BALL_AREA, 90)
 
 
 def drag_coeff(v):
-    reynolds = (AD * v * BALL_DIA) / AIR_VISC
+    reynolds = (AD * v[0] * BALL_DIA) / AIR_VISC
     reynolds_list = [re[0] for re in REYNOLDS_TO_CD]
     cd_index = reynolds_list.index(min(reynolds_list, key=lambda x: abs(x - reynolds)))
     return REYNOLDS_TO_CD[cd_index][1]
+
+
+def lift_coeff(ang_v):
+    return (
+        (4.35776526e-10 * ang_v**3)
+        + (-9.35775438e-07 * ang_v**2)
+        + (8.17882056e-04 * ang_v)
+        + 1.68778908e-04
+    )
 
 
 def add_vectors(*args):
@@ -89,16 +103,49 @@ def add_vectors(*args):
 
 def simulate():
     time = 0
-    displacement = 0
-    ball_vel = (45, 20)
+    displacement = [(0, 0)]
+    ball_vel = (45, 30)
     ang_vel = BALL_INITIAL_ANG_VEL
     fnet = BALL_INITIAL_NET
-    while displacement >= 0:
-        displacement = add_vectors()
+    while displacement[-1][1] >= 0:
+        x, y = displacement[-1]
+        x += ball_vel[0] * math.cos(math.radians(ball_vel[1]))
+        y += ball_vel[0] * math.sin(math.radians(ball_vel[1]))
+        displacement.append((x, y))
         time += 1
         # Applying transformations
-        accel = (fnet[0]/BALL_MASS, fnet[1])
+        accel = (fnet[0] / BALL_MASS, fnet[1])
         ball_vel = add_vectors(ball_vel, accel)
-        ang_vel *= (1 - BALL_SPIN_DECAY_RATE)
+        ang_vel *= 1 - BALL_SPIN_DECAY_RATE
         # Calculating new forces
+        Fd = drag_force(ball_vel, drag_coeff(ball_vel), ball_vel)
+        Fl = lift_force(ball_vel, lift_coeff(ang_vel))
+        fnet = add_vectors(Fd, Fl, WEIGHT_FORCE)
+        print(displacement)
+        print(f"accel{accel}")
+        print(f"ball_vel{ball_vel}")
+        print(f"fnet{fnet}")
+        print(f"fd{Fd}")
+        print(f"Fl{Fl}")
 
+    x_list = [coord[0] for coord in displacement]
+    y_list = [coord[1] for coord in displacement]
+    x_array = np.array(x_list)
+    y_array = np.array(y_list)
+
+    coefficients = np.polyfit(x_array, y_array, 15)
+    quadratic_fit = np.poly1d(coefficients)
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(x_array, y_array, label='Displacement Data', color='blue')
+    plt.plot(x_array, quadratic_fit(x_array), color='red', label='Quadratic Line of Best Fit')
+    plt.plot()
+    plt.title('Displacement of Golf Ball Over Time')
+    plt.xlabel('Horizontal Displacement (m)')
+    plt.ylabel('Vertical Displacement (m)')
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+if __name__ == "__main__":
+    simulate()
