@@ -128,6 +128,7 @@ def simulate():
         print(f"fnet{fnet}")
         print(f"fd{Fd}")
         print(f"Fl{Fl}")
+    print(f"time of flight for realistic flight:{time}")
 
     x_list = [coord[0] for coord in displacement]
     y_list = [coord[1] for coord in displacement]
@@ -143,6 +144,7 @@ def simulate():
         x_proj = BALL_INITIAL_VEL[0]*math.cos(math.radians(BALL_INITIAL_VEL[1]))*t
         y_proj = -4.9*(t**2) + BALL_INITIAL_VEL[0]*math.sin(math.radians(BALL_INITIAL_VEL[1]))*t
         displacement_projectile.append((x_proj, y_proj))
+    print(f"time of flight for projectile motion: {t}")
     x_proj_array = np.array([coord[0] for coord in displacement_projectile])
     y_proj_array = np.array([coord[1] for coord in displacement_projectile])
 
@@ -152,13 +154,14 @@ def simulate():
     proj_coefficients = np.polyfit(x_proj_array, y_proj_array, 15)
     proj_quadratic_fit = np.poly1d(proj_coefficients)
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(14, 2))
     plt.scatter(x_array, y_array, label="Displacement Data", color="blue")
     plt.plot(x_array, quadratic_fit(x_array), color="red", label="Polynomial Line of Best Fit")
     plt.plot(x_proj_array, proj_quadratic_fit(x_proj_array), color="green", label="Projectile Motion")
     plt.title("Displacement of Golf Ball Over Time")
     plt.xlabel("Horizontal Displacement (m)")
     plt.ylabel("Vertical Displacement (m)")
+    plt.ylim(0,33)
     plt.legend()
     plt.grid()
     plt.show()
