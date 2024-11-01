@@ -3,15 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # CONSTANTS
+TIME_INCREMENT = 0.5
 AD = 1.2
 AIR_VISC = 18.17e-6
-BALL_INITIAL_VEL = 45
+BALL_INITIAL_VEL = (45,20)
 BALL_DIA = 0.043
 BALL_RAD = BALL_DIA / 2
 BALL_MASS = 0.045
 BALL_AREA = math.pi * (BALL_RAD**2)
-BALL_INITIAL_ANG_VEL = 418
-BALL_SPIN_DECAY_RATE = 0.04
+BALL_INITIAL_ANG_VEL = 840
+BALL_SPIN_DECAY_RATE_PER_SEC = 0.04 * TIME_INCREMENT
 WEIGHT_FORCE = (0.45, 270)
 BALL_INITIAL_NET = (0.47779996900547594, -164.51202290763308)
 REYNOLDS_TO_CD = [
@@ -104,19 +105,19 @@ def add_vectors(*args):
 def simulate():
     time = 0
     displacement = [(0, 0)]
-    ball_vel = (45, 30)
+    ball_vel = BALL_INITIAL_VEL
     ang_vel = BALL_INITIAL_ANG_VEL
     fnet = BALL_INITIAL_NET
     while displacement[-1][1] >= 0:
         x, y = displacement[-1]
-        x += ball_vel[0] * math.cos(math.radians(ball_vel[1]))
-        y += ball_vel[0] * math.sin(math.radians(ball_vel[1]))
+        x += (ball_vel[0] * math.cos(math.radians(ball_vel[1]))) * TIME_INCREMENT
+        y += (ball_vel[0] * math.sin(math.radians(ball_vel[1]))) * TIME_INCREMENT
         displacement.append((x, y))
-        time += 1
+        time += TIME_INCREMENT
         # Applying transformations
-        accel = (fnet[0] / BALL_MASS, fnet[1])
+        accel = ((fnet[0] / BALL_MASS) * TIME_INCREMENT, fnet[1])
         ball_vel = add_vectors(ball_vel, accel)
-        ang_vel *= 1 - BALL_SPIN_DECAY_RATE
+        ang_vel *= 1 - BALL_SPIN_DECAY_RATE_PER_SEC
         # Calculating new forces
         Fd = drag_force(ball_vel, drag_coeff(ball_vel), ball_vel)
         Fl = lift_force(ball_vel, lift_coeff(ang_vel))
@@ -133,16 +134,31 @@ def simulate():
     x_array = np.array(x_list)
     y_array = np.array(y_list)
 
+
+    displacement_projectile = [(0,0)]
+    t = 0
+    y_proj = 1
+    while y_proj > 0:
+        t += 0.01
+        x_proj = BALL_INITIAL_VEL[0]*math.cos(math.radians(BALL_INITIAL_VEL[1]))*t
+        y_proj = -4.9*(t**2) + BALL_INITIAL_VEL[0]*math.sin(math.radians(BALL_INITIAL_VEL[1]))*t
+        displacement_projectile.append((x_proj, y_proj))
+    x_proj_array = np.array([coord[0] for coord in displacement_projectile])
+    y_proj_array = np.array([coord[1] for coord in displacement_projectile])
+
+
     coefficients = np.polyfit(x_array, y_array, 15)
     quadratic_fit = np.poly1d(coefficients)
+    proj_coefficients = np.polyfit(x_proj_array, y_proj_array, 15)
+    proj_quadratic_fit = np.poly1d(proj_coefficients)
 
     plt.figure(figsize=(10, 6))
-    plt.scatter(x_array, y_array, label='Displacement Data', color='blue')
-    plt.plot(x_array, quadratic_fit(x_array), color='red', label='Quadratic Line of Best Fit')
-    plt.plot()
-    plt.title('Displacement of Golf Ball Over Time')
-    plt.xlabel('Horizontal Displacement (m)')
-    plt.ylabel('Vertical Displacement (m)')
+    plt.scatter(x_array, y_array, label="Displacement Data", color="blue")
+    plt.plot(x_array, quadratic_fit(x_array), color="red", label="Polynomial Line of Best Fit")
+    plt.plot(x_proj_array, proj_quadratic_fit(x_proj_array), color="green", label="Projectile Motion")
+    plt.title("Displacement of Golf Ball Over Time")
+    plt.xlabel("Horizontal Displacement (m)")
+    plt.ylabel("Vertical Displacement (m)")
     plt.legend()
     plt.grid()
     plt.show()
