@@ -14,7 +14,7 @@ BALL_AREA = math.pi * (BALL_RAD**2)
 BALL_INITIAL_ANG_VEL = 840
 BALL_SPIN_DECAY_RATE_PER_SEC = 0.04 * TIME_INCREMENT
 WEIGHT_FORCE = (0.45, 270)
-BALL_INITIAL_NET = (0.47779996900547594, -164.51202290763308)
+BALL_INITIAL_NET = (0.6473997508804235, -165.95253713183618)
 REYNOLDS_TO_CD = [
     (93055.55555555556, 0.2580508474576271),
     (77500.0, 0.26440677966101694),
@@ -63,8 +63,8 @@ time = 0
 def drag_force(v, Cd, velocity) -> int:
     return (0.5 * AD * (v[0]**2) * Cd * BALL_AREA, velocity[1]+180)
 
-def lift_force(v, Cl) -> int:
-    return (0.5 * AD * (v[0]**2) * Cl * BALL_AREA, 90)
+def lift_force(v, Cl, velocity) -> int:
+    return (0.5 * AD * (v[0]**2) * Cl * BALL_AREA, velocity[1]+90)
 
 
 def drag_coeff(v):
@@ -120,7 +120,7 @@ def simulate():
         ang_vel *= 1 - BALL_SPIN_DECAY_RATE_PER_SEC
         # Calculating new forces
         Fd = drag_force(ball_vel, drag_coeff(ball_vel), ball_vel)
-        Fl = lift_force(ball_vel, lift_coeff(ang_vel))
+        Fl = lift_force(ball_vel, lift_coeff(ang_vel), ball_vel)
         fnet = add_vectors(Fd, Fl, WEIGHT_FORCE)
         print(displacement)
         print(f"accel{accel}")
@@ -165,6 +165,7 @@ def simulate():
     plt.legend()
     plt.grid()
     plt.show()
+    print(add_vectors((0.49, 110), (0.45, 270), (0.49, 200)))
 
 if __name__ == "__main__":
     simulate()
